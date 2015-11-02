@@ -16,6 +16,7 @@ mariadb_debconf:
 mysql_packages:
   pkg.installed:
   - names: {{ server.pkgs }}
+  - reload_modules: true
 
 mysql_config:
   file.managed:
