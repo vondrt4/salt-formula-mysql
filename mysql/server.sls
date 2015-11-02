@@ -91,6 +91,7 @@ mysql_database_{{ database_name }}:
   - name: {{ database_name }}
   - require:
     - service: mysql_service
+    - pkg: mysql_packages
 
 {%- for user in database.users %}
 
