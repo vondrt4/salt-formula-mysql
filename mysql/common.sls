@@ -1,5 +1,6 @@
 {%- from "mysql/map.jinja" import server with context %}
 
+{%- if grains.os_family == "Debian" %}
 {%- if server.admin is defined %}
 
 mariadb_debconf:
@@ -12,13 +13,49 @@ mariadb_debconf:
     - pkg: mysql_packages
 
 {%- endif %}
+{%- endif %}
+
+{%- if pillar.mysql.cluster is defined %}
+{%- from "mysql/map.jinja" import cluster with context %}
+
+
+mysql_packages:
+  pkg.installed:
+  - names: {{ cluster.pkgs }}
+  - reload_modules: true
+
+{%- if grains.os_family == "Debian" %}
+
+{# JPavlik fix for /etc/init.d/mysql percona21
+#tvondra: should not be necessary any more
+
+mysql_initd:
+  file.managed:
+    - name: /etc/init.d/mysql
+    - source: salt://mysql/conf/mysqlinitfile
+    - mode: 755
+    - require: 
+      - pkg: mysql_packages
+#}
+
+{%- endif %}
+
+
+mysql_log_dir:
+  file.directory:
+  - name: /var/log/mysql
+  - makedirs: true
+  - mode: 755
+  - require:
+    - pkg: mysql_packages
+
+
+{%- else %} #not cluster
 
 mysql_packages:
   pkg.installed:
   - names: {{ server.pkgs }}
   - reload_modules: true
-
-{%- if server.version != '5.6' %}
 
 mysql_config:
   file.managed:
@@ -26,17 +63,17 @@ mysql_config:
   - source: salt://mysql/conf/my.cnf.{{ grains.os_family }}
   - mode: 644
   - template: jinja
-  - require: 
+  - require:
     - pkg: mysql_packages
-  - watch_in:
-    - service: mysql_service
-
-{%- endif %}
 
 mysql_service:
   service.running:
   - name: {{ server.service }}
   - enable: true
+  - watch:
+    - file: mysql_config
+
+{%- endif %}
 
 mysql_config_dir:
   file.directory:
@@ -56,6 +93,46 @@ mysql_dirs:
   - makedirs: true
   - require: 
     - pkg: mysql_packages
+
+{#
+{%- if grains.os_family == "RedHat" %}
+
+mysql_setup:
+  cmd.run:
+  - name: mysql_install_db
+  - unless: test -e /var/lib/mysql/mysql.sock
+  - require:
+    - file: mysql_config_dir
+  - require_in:
+    - service: mysql_service
+
+{%- if cluster.enabled %}
+
+{%- else %}
+
+{%- if server.admin is defined %}
+
+mysql_set_root_password:
+  cmd.run:
+  - name: 'echo "update user set password=PASSWORD(''{{ pillar.mysql.server.admin.password }}'') where User=''{{ pillar.mysql.server.admin.user }}'';flush privileges; exit;" | /usr/bin/env HOME=/ mysql -uroot mysql'
+  - unless: 'mysql -u root -e "show databases;" | grep mysql'
+  - require:
+    - file: /root/mysql/flags
+    - pkg: mysql_packages
+
+mysql_change_root_password:
+  cmd.run:
+  - name: 'echo "update user set password=PASSWORD(''{{ pillar.mysql.server.admin.password }}'') where User=''{{ pillar.mysql.server.admin.user }}'';flush privileges; exit;" | mysql -uroot mysql'
+  - onlyif: '(echo | mysql -u root) && [ -f /root/.my.cnf ] && ! fgrep -q ''{{ pillar.mysql.server.admin.password }}'' /root/.my.cnf'
+  - require:
+    - cmd: mysql_set_root_password
+
+{%- endif %}
+
+{%- endif %}
+
+{%- endif %}
+#}
 
 /root/mysql/flags:
   file.directory:

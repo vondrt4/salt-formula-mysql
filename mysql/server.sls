@@ -1,8 +1,12 @@
 {%- from "mysql/map.jinja" import server with context %}
+{%- from "mysql/map.jinja" import cluster with context %}
 {%- if server.enabled %}
 
 include:
 - mysql.common
+{%- if cluster.enabled %}
+- mysql.cluster
+{%- endif %}
 
 {%- if server.ssl.enabled %}
 
@@ -57,15 +61,15 @@ include:
   - user: {{ server.replication.user }}
   - host: '%'
 
-{%- endif %}
+{%- endif %} 
 
 {%- if server.replication.role in ['slave', 'both'] %}
 
-{%- if not salt['mysql.get_slave_status'] is defined %}
+{%- if not salt['mysql.get_slave_status'] is defined %} 
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
-{%- elif salt['mysql.get_slave_status']() == [] %}
+{%- elif salt['mysql.get_slave_status']() == [] %} 
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
@@ -77,11 +81,11 @@ include:
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
-{%- endif %}
+{%- endif %} 
 
-{%- endif %}
+{%- endif %} 
 
-{%- endif %}
+{%- endif %} 
 
 
 {%- for database_name, database in server.get('database', {}).iteritems() %}
@@ -90,8 +94,11 @@ mysql_database_{{ database_name }}:
   mysql_database.present:
   - name: {{ database_name }}
   - require:
+    {% if cluster.enabled %}
+    - cmd: mysql_cluster_init
+    {% else %}
     - service: mysql_service
-    - pkg: mysql_packages
+    {% endif %}
 
 {%- for user in database.users %}
 
@@ -101,7 +108,11 @@ mysql_user_{{ user.name }}_{{ database_name }}_{{ user.host }}:
   - name: '{{ user.name }}'
   - password: {{ user.password }}
   - require:
+    {% if cluster.enabled %}
+    - cmd: mysql_cluster_init
+    {% else %}
     - service: mysql_service
+    {% endif %}
 
 mysql_grants_{{ user.name }}_{{ database_name }}_{{ user.host }}:
   mysql_grants.present:
@@ -124,7 +135,7 @@ mysql_grants_{{ user.name }}_{{ database_name }}_{{ user.host }}:
   - template: jinja
   - defaults:
     database_name: {{ database_name }}
-  - require:
+  - require: 
     - file: mysql_dirs
     - mysql_database: mysql_database_{{ database_name }}
 

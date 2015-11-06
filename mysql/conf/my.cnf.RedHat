@@ -1,0 +1,249 @@
+{%- set mysql = pillar.mysql.server %}
+
+{%- if grains.os_family == "RedHat" %}
+{%- set lib_path = '/usr/lib64' %}
+{%- endif %}
+{%- if grains.os_family == "Debian" %}
+{%- set lib_path = '/usr/lib64' %}
+{%- endif %}
+
+{% if not pillar.mysql.cluster is defined %}
+
+{#
+[mysqld]
+datadir=/var/lib/mysql
+socket    = /var/lib/mysql/mysql.sock
+user=mysql
+
+# (This must be substituted by wsrep_format)
+binlog_format=ROW
+
+symbolic-links=0
+bind-address    = {{ mysql.bind.address }}
+
+wsrep_provider={{ lib_path }}/galera/libgalera_smm.so
+
+# to avoid issues with 'bulk mode inserts' using autoinc
+innodb_autoinc_lock_mode=2
+
+# This is a must for paralell applying
+innodb_locks_unsafe_for_binlog=1
+
+# Query Cache is not supported with wsrep
+query_cache_size=0
+
+# Provider specific configuration options
+# See http://www.codership.com/wiki/doku.php?id=faq
+
+wsrep_provider_options="pc.ignore_sb = no;ist.recv_addr={{ mysql.bind.address }};gmcast.listen_addr=tcp://{{ mysql.bind.address }}:4567"
+
+#At first node for starting galera cluster
+#wsrep_cluster_address=gcomm://
+
+#After start galera cluster, switch first node back to ip address
+wsrep_cluster_address="gcomm://{% for member in cluster.members %}{{ member.host}}{% if not loop.last%},{% endif %}{% endfor %}?pc.wait_prim=no"
+
+# Base replication <address|hostname>[:port] of the node.
+# The values supplied will be used as defaults for state transfer receiving,
+# listening ports and so on. Default: address of the first network interface.
+wsrep_node_address={{ mysql.bind.address }}
+
+# Generate fake primary keys for non-PK tables (required for multi-master
+# and parallel applying operation)
+wsrep_certify_nonPK=1
+
+# Maximum number of rows in write set
+wsrep_max_ws_rows=131072
+
+# Maximum size of write set
+wsrep_max_ws_size=1073741824
+
+# to enable debug level logging, set this to 1
+wsrep_debug=0
+
+# convert locking sessions into transactions
+wsrep_convert_LOCK_to_trx=0
+
+# how many times to retry deadlocked autocommits
+wsrep_retry_autocommit=1
+
+# change auto_increment_increment and auto_increment_offset automatically
+wsrep_auto_increment_control=1
+
+# retry autoinc insert, which failed for duplicate key error
+wsrep_drupal_282555_workaround=0
+
+# enable "strictly synchronous" semantics for read operations
+wsrep_causal_reads=0
+
+# State Snapshot Transfer method
+#wsrep_sst_method=mysqldump
+wsrep_sst_method=rsync
+
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+# wsrep.conf currently not used
+#!includedir /etc/mysql/conf.d/
+
+
+###Old config
+#}
+
+[client]
+port    = {{ mysql.bind.get('port', '3306') }}
+socket    = /var/lib/mysql/mysql.sock
+
+[mysqld_safe]
+socket    = /var/lib/mysql/mysql.sock
+nice    = 0
+syslog
+
+[mysqld]
+user    = mysql
+pid-file  = /var/run/mysqld/mysqld.pid
+socket    = /var/lib/mysql/mysql.sock
+port    = {{ mysql.bind.get('port', '3306') }}
+basedir   = /usr
+datadir   = /var/lib/mysql
+tmpdir    = /tmp
+skip-external-locking
+
+{% if mysql.force_encoding is defined %}
+character-set-server=utf8
+default-character-set=utf8
+{% endif %}
+
+bind-address    = {{ mysql.bind.address }}
+
+key_buffer             = {{ mysql.get('key_buffer', '16') }}M
+max_allowed_packet     = {{ mysql.get('max_allowed_packet', '16') }}M
+thread_stack           = {{ mysql.get('thread_stack', '192') }}K
+thread_cache_size      = {{ mysql.get('thread_cache_size', '8') }}
+
+myisam-recover     = BACKUP
+
+query_cache_limit      = {{ mysql.get('query_cache_limit', '1') }}M
+query_cache_size       = {{ mysql.get('query_cache_size', '16') }}M
+
+log_error          = /var/log/mysqld.log
+expire_logs_days   = 10
+max_binlog_size    = 100M
+
+default-storage-engine = InnoDB
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet     = {{ mysql.get('max_allowed_packet', '16') }}M
+
+[mysql]
+[isamchk]
+key_buffer             = {{ mysql.get('key_buffer', '16') }}M
+
+!includedir /etc/mysql/conf.d/
+
+{% else %}
+
+{%- set cluster = pillar.mysql.cluster %}
+
+
+###Old config
+{#
+#[mysqld]
+#datadir=/var/lib/mysql
+#socket=/var/lib/mysql/mysql.sock
+#user=mysql
+# Disabling symbolic-links is recommended to prevent assorted security risks
+#symbolic-links=0
+
+[mysqld_safe]
+#log-error=/var/log/mysqld.log
+#pid-file=/var/run/mysqld/mysqld.pid
+syslog
+
+!includedir /etc/mysql/conf.d/
+#}
+###END old config
+
+[mysqld]
+datadir=/var/lib/mysql
+socket    = /var/lib/mysql/mysql.sock
+user=mysql
+
+# (This must be substituted by wsrep_format)
+binlog_format=ROW
+
+symbolic-links=0
+bind-address    = {{ mysql.bind.address }}
+
+wsrep_provider={{ lib_path }}/galera/libgalera_smm.so
+
+# to avoid issues with 'bulk mode inserts' using autoinc
+#innodb_autoinc_lock_mode=2
+
+# This is a must for paralell applying
+#innodb_locks_unsafe_for_binlog=1
+
+# Query Cache is not supported with wsrep
+#query_cache_size=0
+
+# Provider specific configuration options
+# See http://www.codership.com/wiki/doku.php?id=faq
+
+#wsrep_provider_options="pc.ignore_sb = no;ist.recv_addr={{ mysql.bind.address }};gmcast.listen_addr=tcp://{{ mysql.bind.address }}:4567"
+
+#At first node for starting galera cluster
+#wsrep_cluster_address=gcomm://
+
+#After start galera cluster, switch first node back to ip address
+wsrep_cluster_address="gcomm://{% for member in cluster.members %}{{ member.host}}{% if not loop.last%},{% endif %}{% endfor %}"
+
+# Base replication <address|hostname>[:port] of the node.
+# The values supplied will be used as defaults for state transfer receiving,
+# listening ports and so on. Default: address of the first network interface.
+#wsrep_node_address={{ mysql.bind.address }}
+
+# Generate fake primary keys for non-PK tables (required for multi-master
+# and parallel applying operation)
+#wsrep_certify_nonPK=1
+
+# Maximum number of rows in write set
+#wsrep_max_ws_rows=131072
+
+# Maximum size of write set
+#wsrep_max_ws_size=1073741824
+
+# to enable debug level logging, set this to 1
+#wsrep_debug=0
+
+# convert locking sessions into transactions
+#wsrep_convert_LOCK_to_trx=0
+
+# how many times to retry deadlocked autocommits
+#wsrep_retry_autocommit=1
+
+# change auto_increment_increment and auto_increment_offset automatically
+#wsrep_auto_increment_control=1
+
+# retry autoinc insert, which failed for duplicate key error
+#wsrep_drupal_282555_workaround=0
+
+# enable "strictly synchronous" semantics for read operations
+#wsrep_causal_reads=0
+
+# State Snapshot Transfer method
+#wsrep_sst_method=mysqldump
+wsrep_sst_method=rsync
+
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+# wsrep.conf currently not used
+#!includedir /etc/mysql/conf.d/
+
+{% endif %}
