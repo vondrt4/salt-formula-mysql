@@ -1,0 +1,40 @@
+{%- set mysql = pillar.mysql.server %}
+{%- set cluster = pillar.mysql.cluster %}
+
+{%- if grains.os_family == "RedHat" %}
+{%- set lib_path = '/usr/lib64' %}
+{%- endif %}
+{%- if grains.os_family == "Debian" %}
+{%- set lib_path = '/usr/lib64' %}
+{%- endif %}
+
+
+[mysqld]
+datadir=/var/lib/mysql
+socket    = /var/lib/mysql/mysql.sock
+user=mysql
+
+symbolic-links=0
+bind-address    = {{ mysql.bind.address }}
+
+wsrep_provider={{ lib_path }}/galera/libgalera_smm.so
+
+#At first node for starting galera cluster
+wsrep_cluster_address=gcomm://
+
+#After start galera cluster, switch first node back to ip address
+#wsrep_cluster_address="gcomm://{% for member in cluster.members %}{{ member.host}}{% if not loop.last%},{% endif %}{% endfor %}"
+
+# State Snapshot Transfer method
+#wsrep_sst_method=mysqldump
+wsrep_sst_method=rsync
+
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+# wsrep.conf currently not used
+#!includedir /etc/mysql/conf.d/
+
+{% endif %}

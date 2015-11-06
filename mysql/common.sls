@@ -13,6 +13,26 @@ mariadb_debconf:
 
 {%- endif %}
 
+{%- if pillar.mysql.cluster is defined %}
+{%- from "mysql/map.jinja" import cluster with context %}
+
+
+mysql_packages:
+  pkg.installed:
+  - names: {{ cluster.pkgs }}
+  - reload_modules: true
+
+mysql_log_dir:
+  file.directory:
+  - name: /var/log/mysql
+  - makedirs: true
+  - mode: 755
+  - require:
+    - pkg: mysql_packages
+
+
+{%- else %} #not cluster
+
 mysql_packages:
   pkg.installed:
   - names: {{ server.pkgs }}

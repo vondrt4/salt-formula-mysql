@@ -1,9 +1,12 @@
 {%- from "mysql/map.jinja" import server, mysql_connection_args with context %}
-
+{%- from "mysql/map.jinja" import cluster with context %}
 {%- if server.enabled %}
 
 include:
 - mysql.common
+{%- if cluster.enabled %}
+- mysql.cluster
+{%- endif %}
 
 {%- if server.ssl.enabled %}
 
@@ -98,15 +101,15 @@ include:
   - watch_in:
     - service: mysql_service
 
-{%- endif %}
+{%- endif %} 
 
 {%- if server.replication.role in ['slave', 'both'] %}
 
-{%- if not salt['mysql.get_slave_status'] is defined %}
+{%- if not salt['mysql.get_slave_status'] is defined %} 
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
-{%- elif salt['mysql.get_slave_status']() == [] %}
+{%- elif salt['mysql.get_slave_status']() == [] %} 
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
@@ -118,10 +121,10 @@ include:
 
 {%- include "mysql/server/_connect_replication_slave.sls" %}
 
-{%- endif %}
+{%- endif %} 
 
-{%- endif %}
+{%- endif %} 
 
-{%- endif %}
+{%- endif %} 
 
 {%- endif %}
