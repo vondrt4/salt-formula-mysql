@@ -42,9 +42,15 @@ mysql_default_config:
 mysql_cluster_init:
   cmd.run:
   - names:
+{#tvondra: debconf does not work with mysql_server_wsrep
     -  mysql -u root -p{{ server.admin.password }} -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '{{ server.maintenance_password }}';"
-    -  service mysql stop 
+#}
+    -  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '{{ server.maintenance_password }}';"
+    -  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '{{ server.admin.password }}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' IDENTIFIED BY '{{ server.admin.password }}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'::1' IDENTIFIED BY '{{ server.admin.password }}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'{{ pillar.linux.system.name }}' IDENTIFIED BY '{{ server.admin.password }}';"
+    -  service mysql stop
+{#this does not work as well on Ubuntu 14
     -  service mysql start --wsrep-new-cluster
+#}
     -  touch /root/mysql/flags/cluster-installed
   - unless: test -e /root/mysql/flags/cluster-installed
   - require:
