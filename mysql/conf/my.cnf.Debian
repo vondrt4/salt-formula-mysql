@@ -342,3 +342,6 @@ key_buffer              = 16M
 !includedir /etc/mysql/conf.d/
 
 {%- endif %}
+
+[xtrabackup]
+datadir=/var/lib/mysql
