@@ -70,7 +70,7 @@ thread_cache_size=512
 sysdate-is-now=1
 memlock=0
 skip-name-resolve
-max_allowed_packet = {{ mysql.get('max_allowed_packet', '64') }}M
+max_allowed_packet = {{ cluster.get('max_allowed_packet', '64') }}M
 max_heap_table_size = 64M
 tmp_table_size = 64M
 key_buffer_size = 24M
