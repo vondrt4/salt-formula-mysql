@@ -1,23 +1,18 @@
 {%- from "mysql/map.jinja" import server with context %}
 
-{%- if grains.os_family == "Debian" %}
-{%- if server.admin is defined %}
+{%- if pillar.mysql.cluster is defined %}
+{%- from "mysql/map.jinja" import cluster with context %}
 
+{%- if server.admin is defined %}
 mariadb_debconf:
   debconf.set:
-  - name: mariadb-server
+  - name: mysql-server-wsrep
   - data:
       'mysql-server/root_password': {'type':'string','value':'{{ server.admin.password }}'}
       'mysql-server/root_password_again': {'type':'string','value':'{{ server.admin.password }}'}
   - require_in:
     - pkg: mysql_packages
-
 {%- endif %}
-{%- endif %}
-
-{%- if pillar.mysql.cluster is defined %}
-{%- from "mysql/map.jinja" import cluster with context %}
-
 
 mysql_packages:
   pkg.installed:
@@ -51,6 +46,17 @@ mysql_log_dir:
 
 
 {%- else %} #not cluster
+
+{%- if server.admin is defined %}
+mariadb_debconf:
+  debconf.set:
+  - name: mysql-server-{{ server.version }}
+  - data:
+   'mysql-server/root_password': {'type':'string','value':'{{ server.admin.password }}'}
+   'mysql-server/root_password_again': {'type':'string','value':'{{ server.admin.password }}'}
+  - require_in:
+ - pkg: mysql_packages
+{%- endif %}
 
 mysql_packages:
   pkg.installed:
