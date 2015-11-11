@@ -19,6 +19,22 @@ mysql_packages:
   - names: {{ cluster.pkgs }}
   - reload_modules: true
 
+{%- if grains.os_family == "Debian" %}
+
+# JPavlik fix for /etc/init.d/mysql percona21
+#tvondra: should not be necessary any more, because it is packaged. But I changed the config here to have the pidfile at its default location, so I broke the packaged initscript, so:
+
+mysql_initd:
+  file.managed:
+    - name: /etc/init.d/mysql
+    - source: salt://mysql/conf/mysqlinitfile
+    - mode: 755
+    - require:
+      - pkg: mysql_packages
+
+{%- endif %}
+
+
 mysql_log_dir:
   file.directory:
   - name: /var/log/mysql
