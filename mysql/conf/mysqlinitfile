@@ -52,10 +52,11 @@ mysqld_get_param() {
 datadir=`mysqld_get_param datadir`
 [ -z "$datadir" ] && datadir="/var/lib/mysql"
 pidfile=`mysqld_get_param pid_file`
-#[ -z "$pidfile" ] && pidfile="$datadir/$(hostname).pid"
+#tvondra: reverted commenting out this line:
+[ -z "$pidfile" ] && pidfile="$datadir/$(hostname).pid"
 
 #JPavlik tcp cloud fix for init script
-pidfile="/var/lib/mysql/mysqld.pid"
+#pidfile="/var/lib/mysql/mysqld.pid"
 ## Do some sanity checks before even trying to start mysqld.
 sanity_checks() {
   # check for config file
