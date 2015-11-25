@@ -75,6 +75,8 @@ max_heap_table_size = 64M
 tmp_table_size = 64M
 key_buffer_size = 24M
 
+max_connections = {{ cluster.get('max_connections', '100') }}
+
 # Query Cache is not supported with wsrep
 #query_cache_size=0
 #query_cache_type=0
