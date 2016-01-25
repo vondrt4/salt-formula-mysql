@@ -94,7 +94,7 @@ bind-address={{ cluster.bind.address }}
 wsrep_provider=/usr/lib/galera/libgalera_smm.so
 
 # Provider specific configuration options
-wsrep_provider_options=gcache.size={{ cluster.get('gcache_size', '8192') }}M
+wsrep_provider_options="gcache.size={{ cluster.get('gcache_size', '8192') }}M; evs.keepalive_period = PT3S; evs.suspect_timeout = PT30S; evs.inactive_timeout = PT1M; evs.install_timeout = PT1M"
 
 # Logical cluster name. Should be the same for all nodes.
 wsrep_cluster_name="my_wsrep_cluster"

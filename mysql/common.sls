@@ -1,8 +1,5 @@
 {%- from "mysql/map.jinja" import server with context %}
 
-{%- if pillar.mysql.cluster is defined %}
-{%- from "mysql/map.jinja" import cluster with context %}
-
 {%- if server.admin is defined %}
 mariadb_debconf:
   debconf.set:
@@ -12,28 +9,20 @@ mariadb_debconf:
       'mysql-server/root_password_again': {'type':'string','value':'{{ server.admin.password }}'}
   - require_in:
     - pkg: mysql_packages
+<<<<<<< 7f9af46d441d0ff63fb0a488ad8b76b57f18306c
+
+=======
+>>>>>>> 13327302db6f2b94c197313f724a8f6f39073afc
 {%- endif %}
+
+{%- if pillar.mysql.cluster is defined %}
+{%- from "mysql/map.jinja" import cluster with context %}
+
 
 mysql_packages:
   pkg.installed:
   - names: {{ cluster.pkgs }}
   - reload_modules: true
-
-{%- if grains.os_family == "Debian" %}
-
-# JPavlik fix for /etc/init.d/mysql percona21
-#tvondra: should not be necessary any more, because it is packaged. But I changed the config here to have the pidfile at its default location, so I broke the packaged initscript, so:
-
-mysql_initd:
-  file.managed:
-    - name: /etc/init.d/mysql
-    - source: salt://mysql/conf/mysqlinitfile
-    - mode: 755
-    - require:
-      - pkg: mysql_packages
-
-{%- endif %}
-
 
 mysql_log_dir:
   file.directory:
