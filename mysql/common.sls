@@ -1,19 +1,5 @@
 {%- from "mysql/map.jinja" import server with context %}
 
-{%- if server.admin is defined %}
-mariadb_debconf:
-  debconf.set:
-  - name: mysql-server-wsrep
-  - data:
-      'mysql-server/root_password': {'type':'string','value':'{{ server.admin.password }}'}
-      'mysql-server/root_password_again': {'type':'string','value':'{{ server.admin.password }}'}
-  - require_in:
-    - pkg: mysql_packages
-<<<<<<< 7f9af46d441d0ff63fb0a488ad8b76b57f18306c
-
-=======
->>>>>>> 13327302db6f2b94c197313f724a8f6f39073afc
-{%- endif %}
 
 {%- if pillar.mysql.cluster is defined %}
 {%- from "mysql/map.jinja" import cluster with context %}
@@ -32,6 +18,16 @@ mysql_log_dir:
   - require:
     - pkg: mysql_packages
 
+{%- if server.admin is defined %}
+mariadb_debconf:
+  debconf.set:
+  - name: mysql-server-wsrep
+  - data:
+      'mysql-server/root_password': {'type':'string','value':'{{ server.admin.password }}'}
+      'mysql-server/root_password_again': {'type':'string','value':'{{ server.admin.password }}'}
+  - require_in:
+    - pkg: mysql_packages
+{%- endif %}
 
 {%- else %} #not cluster
 
@@ -50,6 +46,8 @@ mysql_packages:
   pkg.installed:
   - names: {{ server.pkgs }}
   - reload_modules: true
+
+{%- endif %} #endif cluster
 
 mysql_config:
   file.managed:
@@ -106,11 +104,6 @@ mysql_dirs:
   - makedirs: true
   - require:
     - pkg: mysql_packages
-
-
-{#
-# 	Backup part
-#}
 
 {#
 # 	Backup part - automysqlbackup
@@ -191,4 +184,3 @@ mysql_automysqlbackup_cron:
 {%- endif %}
 
 {%- endfor %}
-
