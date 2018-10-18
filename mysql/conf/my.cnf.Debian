@@ -20,6 +20,7 @@ default-character-set=utf8
 ## mysqld options _MANDATORY_ for correct opration of the cluster
 ##
 [mysqld]
+datadir=/var/lib/mysql
 
 {%- if server.force_encoding is defined %}
 character-set-server=utf8
@@ -39,7 +40,6 @@ innodb_autoinc_lock_mode=2
 innodb_locks_unsafe_for_binlog=1
 #INNODB
 default-storage-engine=innodb
-engine-condition-pushdown=1
 innodb_data_file_path = ibdata1:100M:autoextend
 innodb_log_file_size=128M #1024M
 innodb_log_files_in_group=2
