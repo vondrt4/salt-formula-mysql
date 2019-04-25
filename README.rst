@@ -1,15 +1,18 @@
 
-=====
-MySQL
-=====
+=============
+MySQL Formula
+=============
 
-MySQL is the world's second most widely used open-source relational database management system (RDBMS).
+MySQL is the world's second most widely used open-source relational database
+management system (RDBMS).
 
-Sample pillars
-==============
 
-Standalone servers
-------------------
+Sample Metadata
+===============
+
+
+Standalone setups
+-----------------
 
 Standalone MySQL server
 
@@ -33,6 +36,7 @@ Standalone MySQL server
               password: 'password'
               host: 'localhost'
               rights: 'all privileges'
+
 
 MySQL replication master with SSL
 
@@ -100,6 +104,7 @@ Tuned up MySQL server
         query_cache_limit: 16M
         query_cache_size: 96M
         force_encoding: utf8
+        sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
         database:
           name:
             encoding: 'utf8'
@@ -109,10 +114,12 @@ Tuned up MySQL server
               host: 'localhost'
               rights: 'all privileges'
 
-MySQL galera cluster
+
+MySQL Galera cluster
 --------------------
 
-MySQL Galera cluster is configured for ring connection between 3 nodes. Each node should have just one member.
+MySQL Galera cluster is configured for ring connection between 3 nodes. Each
+node should have just one member.
 
 Galera initial server (master)
 
@@ -148,8 +155,95 @@ Galera initial server (master)
               host: 'localhost'
               rights: 'all privileges'
 
-Usage
-=====
+MySQL client
+------------
+
+Database with initial data (Restore DB)
+
+.. code-block:: yaml
+
+    mysql:
+      client:
+        server:
+          database:
+            admin:
+              host: localhost
+              port: 3306
+              user: ${_param:mysql_admin_user}
+              password: ${_param:mysql_admin_password}
+              encoding: utf8
+            database:
+              neutron_upgrade:
+                encoding: utf8
+                users:
+                - name: neutron
+                  password: ${_param:mysql_neutron_password}
+                  host: '%'
+                  rights: all
+                - name: neutron
+                  password: ${_param:mysql_neutron_password}
+                  host: ${_param:single_address}
+                  rights: all
+                initial_data:
+                  engine: backupninja
+                  source: ${_param:backupninja_backup_host}
+                  host: ${linux:network:fqdn}
+                  database: neutron
+
+.. note:: This client role needs to be put directly on dbs node. 
+          The provided setup restores db named neutron_upgrade with data from db called neutron.
+
+
+Database management on remote MySQL server
+
+.. code-block:: yaml
+
+    mysql:
+      client:
+        enabled: true
+        server:
+          server01:
+            admin:
+              host: database.host
+              port: 3306
+              user: root
+              password: password
+              encoding: utf8
+            database:
+              database01:
+                encoding: utf8
+                users:
+                - name: username
+                  password: 'password'
+                  host: 'localhost'
+                  rights: 'all privileges'
+
+
+User management on remote MySQL server
+
+.. code-block:: yaml
+
+    mysql:
+      client:
+        enabled: true
+        server:
+          server01:
+            admin:
+              host: database.host
+              port: 3306
+              user: root
+              password: password
+              encoding: utf8
+            users:
+            - name: user01
+              host: "*"
+              password: 'sdgdsgdsgd'
+            - name: user02
+              host: "localhost"
+
+
+Sample Usage
+============
 
 MySQL Galera check sripts
 
@@ -229,24 +323,46 @@ Galera monitoring command, performed from extra server
 
     mysql> SET GLOBAL wsrep_cluster_address='gcomm://10.0.0.2';
 
-Read more
-=========
+More Information
+================
 
 * http://dev.mysql.com/doc/
 * http://www.slideshare.net/osscube/mysql-performance-tuning-top-10-tips
 
-Galera replication
-------------------
-
-* https://github.com/CaptTofu/ansible-galera
-* http://www.sebastien-han.fr/blog/2012/04/15/active-passive-failover-cluster-on-a-mysql-galera-cluster-with-haproxy-lsb-agent/
-* http://opentodo.net/2012/12/mysql-multi-master-replication-with-galera/
-* http://www.codership.com/wiki/doku.php
-* Best one: - http://www.sebastien-han.fr/blog/2012/04/01/mysql-multi-master-replication-with-galera/
-
-Mysql Backup
-------------
-
 * http://sourceforge.net/projects/automysqlbackup/
 * https://labs.riseup.net/code/projects/backupninja/wiki
 * http://wiki.zmanda.com/index.php/Mysql-zrm
+
+
+Documentation and Bugs
+======================
+
+To learn how to install and update salt-formulas, consult the documentation
+available online at:
+
+    http://salt-formulas.readthedocs.io/
+
+In the unfortunate event that bugs are discovered, they should be reported to
+the appropriate issue tracker. Use Github issue tracker for specific salt
+formula:
+
+    https://github.com/salt-formulas/salt-formula-mysql/issues
+
+For feature requests, bug reports or blueprints affecting entire ecosystem,
+use Launchpad salt-formulas project:
+
+    https://launchpad.net/salt-formulas
+
+You can also join salt-formulas-users team and subscribe to mailing list:
+
+    https://launchpad.net/~salt-formulas-users
+
+Developers wishing to work on the salt-formulas projects should always base
+their work on master branch and submit pull request against specific formula.
+
+    https://github.com/salt-formulas/salt-formula-mysql
+
+Any questions or feedback is always welcome so feel free to join our IRC
+channel:
+
+    #salt-formulas @ irc.freenode.net

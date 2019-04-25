@@ -20,6 +20,7 @@ default-character-set=utf8
 ## mysqld options _MANDATORY_ for correct opration of the cluster
 ##
 [mysqld]
+datadir=/var/lib/mysql
 
 {%- if server.force_encoding is defined %}
 character-set-server=utf8
@@ -39,7 +40,6 @@ innodb_autoinc_lock_mode=2
 innodb_locks_unsafe_for_binlog=1
 #INNODB
 default-storage-engine=innodb
-engine-condition-pushdown=1
 innodb_data_file_path = ibdata1:100M:autoextend
 innodb_log_file_size=128M #1024M
 innodb_log_files_in_group=2
@@ -243,6 +243,11 @@ datadir        = /var/lib/mysql
 tmpdir         = /tmp
 lc-messages-dir = /usr/share/mysql
 skip-external-locking
+
+{%- if server.sql_mode is defined %}
+sql-mode={{ server.sql_mode }}
+{%- endif %}
+
 #
 # Instead of skip-networking the default is now to listen only on
 # localhost which is more compatible and is not less secure.
@@ -255,13 +260,13 @@ character-set-server=utf8
 #
 # * Fine Tuning
 #
-key_buffer             = {{ mysql.get('key_buffer', '16') }}M
+key_buffer_size        = {{ mysql.get('key_buffer', '16') }}M
 max_allowed_packet     = {{ mysql.get('max_allowed_packet', '16') }}M
 thread_stack           = {{ mysql.get('thread_stack', '192') }}K
 thread_cache_size      = {{ mysql.get('thread_cache_size', '8') }}
 # This replaces the startup script and checks MyISAM tables if needed
 # the first time they are touched
-myisam-recover         = BACKUP
+myisam-recover-options = BACKUP
 max_connections        = {{ mysql.get('max_connections', '100') }}
 #table_cache           = 64
 #thread_concurrency    = 10
@@ -285,23 +290,34 @@ query_cache_size       = {{ mysql.get('query_cache_size', '16') }}M
 # log_warnings=2
 
 # Here you can see queries with especially long duration
-log_slow_queries       = /var/log/mysql/mysql-slow.log
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/mysql-slow.log
 long_query_time = 2
 #log-queries-not-using-indexes
 #
 # The following can be used as easy to replay backup logs or for replication.
 # note: if you are setting up a replication slave, see README.Debian about
 #       other settings you may need to change.
-{%- if server.replication.role in ['slave','master', 'both'] %}
+{%- if server.replication.role in ['slave', 'master', 'both'] %}
+
 server-id               = {{ server.server_id }}
 log_bin                 = /var/log/mysql/mysql-bin.log
 expire_logs_days        = 10
+
+{%- if server.replication.role in ['both'] %}
+{%- if server.replication.auto_increment is defined %}
+auto_increment_increment = {{ server.replication.auto_increment.increment }}
+auto_increment_offset    = {{ server.replication.auto_increment.offset }}
+{%- endif %}
+{%- endif %}
+
 {%- if server.replication.role in ['slave'] %}
 relay-log               = /var/log/mysql/mysql-relay-bin.log
 {%- for database_name, database in server.get('database', {}).iteritems() %}
 binlog_do_db           = {{ database_name }}
 {%- endfor %}
 {%- endif %}
+
 {%- endif %}
 max_binlog_size         = 100M
 #binlog_ignore_db       = include_database_name
@@ -335,7 +351,7 @@ max_allowed_packet      = 16M
 #no-auto-rehash # faster start of mysql but no tab completition
 
 [isamchk]
-key_buffer              = 16M
+key_buffer_size         = 16M
 
 #
 # * IMPORTANT: Additional settings that can override those from this file!
